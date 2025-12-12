@@ -1,0 +1,73 @@
+services:
+  migration:
+    build:
+      context: ../../
+      dockerfile: deploy/dockers/Dockerfile-migration
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      INNER_POSTGRES_PORT: ${INNER_POSTGRES_PORT}
+      OUTER_POSTGRES_PORT: ${OUTER_POSTGRES_PORT}
+    depends_on:
+      database:
+        condition: service_healthy
+    volumes:
+      - ../../src/infra/database/migrations:/app/src/infra/database/migrations
+    networks:
+      - nw
+
+  api:
+    build:
+      context: ../../
+      dockerfile: deploy/dockers/Dockerfile-api
+    environment:
+      INNER_API_PORT: ${INNER_API_PORT}
+      OUTER_API_PORT: ${OUTER_API_PORT}
+      API_WORKERS_AMOUNT: ${API_WORKERS_AMOUNT}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      INNER_POSTGRES_PORT: ${INNER_POSTGRES_PORT}
+      OUTER_POSTGRES_PORT: ${OUTER_POSTGRES_PORT}
+      BREED_VALIDATOR_API_URL: ${BREED_VALIDATOR_API_URL}
+    ports:
+      - "${OUTER_API_PORT}:${INNER_API_PORT}"
+    depends_on:
+      migration:
+        condition: service_completed_successfully
+      database:
+        condition: service_healthy
+    networks:
+      - nw
+
+  database:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      INNER_POSTGRES_PORT: ${INNER_POSTGRES_PORT}
+      OUTER_POSTGRES_PORT: ${OUTER_POSTGRES_PORT}
+    ports:
+      - "${OUTER_POSTGRES_PORT}:${INNER_POSTGRES_PORT}"
+    volumes:
+      - cats_postgres_data:/var/lib/postgresql/data
+    networks:
+      - nw
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 3s
+      timeout: 1s
+      retries: 5
+
+volumes:
+  cats_postgres_data:
+    driver: local
+
+networks:
+  nw:
+    driver: bridge

@@ -1,0 +1,17 @@
+FROM python:3.13-slim
+
+WORKDIR /app
+
+COPY ../../requirements.txt /app/requirements.txt
+
+RUN pip install --no-cache -r requirements.txt
+
+COPY src/ /app/src/
+COPY alembic.ini /app/alembic.ini
+COPY .dockerignore /app/.dockerignore
+
+
+ENV PYTHONPATH=/app
+
+ENTRYPOINT ["alembic"]
+CMD ["upgrade", "head"]
