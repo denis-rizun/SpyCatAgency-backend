@@ -1,5 +1,7 @@
 FROM python:3.13-slim
 
+RUN useradd -m -s /bin/bash cats-migration
+
 WORKDIR /app
 
 COPY ../../requirements.txt /app/requirements.txt
@@ -10,6 +12,8 @@ COPY src/ /app/src/
 COPY alembic.ini /app/alembic.ini
 COPY .dockerignore /app/.dockerignore
 
+RUN chown -R cats-migration:cats-migration /app/src/infra/database/migrations
+USER cats-migration
 
 ENV PYTHONPATH=/app
 

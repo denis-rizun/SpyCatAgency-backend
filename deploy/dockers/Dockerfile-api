@@ -1,5 +1,8 @@
 FROM python:3.13-slim
 
+RUN useradd -m -s /bin/bash cats-user
+
+
 WORKDIR /app
 
 COPY ../../requirements.txt /app/requirements.txt
@@ -15,6 +18,8 @@ COPY src/ /app/src/
 COPY alembic.ini /app/alembic.ini
 COPY .dockerignore /app/.dockerignore
 COPY deploy/entrypoints/api-entrypoint.sh /app/entrypoint.sh
+
+USER cats-user
 
 ENV PYTHONPATH=/app/
 RUN chmod +x /app/entrypoint.sh
